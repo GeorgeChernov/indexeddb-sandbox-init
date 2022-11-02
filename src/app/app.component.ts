@@ -8,6 +8,9 @@ import { AppDB } from './db';
   styleUrls: ['./app.component.scss'],
 })
 export class AppComponent implements OnInit {
+  output: string = '';
+  initOutput: string = '';
+
   constructor(public httpClient: HttpClient) {}
 
   ngOnInit() {
@@ -16,6 +19,10 @@ export class AppComponent implements OnInit {
     console.log('start reading from the DB', st);
 
     const db = new AppDB('0');
+
+    db.on('ready', () => {
+      this.initOutput = (new Date().getTime() - st).toString();
+    });
 
     db.transaction('r', db.todoItems, async () => {
       return await db.todoItems.get({ id: 1 });
@@ -36,13 +43,14 @@ export class AppComponent implements OnInit {
 
   async populateDBs() {
     const st = new Date().getTime();
+    const numberOfDBs = 5;
 
-    for (let dbIndex = 0; dbIndex < 2; dbIndex++) {
+    for (let dbIndex = 0; dbIndex < numberOfDBs; dbIndex++) {
       console.log('start populating ' + dbIndex, st);
 
       const db = new AppDB(dbIndex.toString());
 
-      await this.populateDB(db);
+      await this.populateDB(db, dbIndex, numberOfDBs);
 
       db.close();
 
@@ -50,11 +58,22 @@ export class AppComponent implements OnInit {
     }
   }
 
-  async populateDB(db: AppDB) {
+  async populateDB(db: AppDB, dbIndex: number, dbTotal: number) {
     const st = new Date().getTime();
 
     const numberOfChunks = 10;
+
     for (let i = 0; i < numberOfChunks; i++) {
+      this.output =
+        'populating DB: ' +
+        (dbIndex + 1) +
+        '/' +
+        dbTotal +
+        ' chunk ' +
+        (i + 1) +
+        '/' +
+        numberOfChunks;
+
       console.log('populating chunk ' + (i + 1) + '/' + numberOfChunks, st);
 
       await db
